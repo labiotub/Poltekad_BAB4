@@ -1,0 +1,17 @@
+import serial
+import time
+
+# Sesuaikan port dengan Pi, misal /dev/ttyS0 atau /dev/ttyAMA0
+arduino = serial.Serial('/dev/ttyS0', 9600, timeout=1)
+time.sleep(2)
+
+def read_distance():
+    while arduino.in_waiting:
+        line = arduino.readline().decode().strip()
+        if line.startswith("Distance:"):
+            print("Jarak Sensor:", line.split(":")[1], "cm")
+
+while True:
+    read_distance()
+    cmd = input("Ketik servo command (servo X): ")
+    arduino.write((cmd + "\n").encode())
