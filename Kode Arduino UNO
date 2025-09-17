@@ -1,0 +1,88 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Servo.h>
+
+#define TRIG_PIN 2
+#define ECHO_PIN 3
+#define LED_R 4
+#define LED_Y 5
+#define LED_G 6
+
+Servo myServo;
+const int servoPin = 7;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+String inputString = "";
+String distanceStatus = "";
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(LED_R, OUTPUT);
+  pinMode(LED_Y, OUTPUT);
+  pinMode(LED_G, OUTPUT);
+
+  myServo.attach(servoPin);
+
+  lcd.init();
+  lcd.backlight();
+}
+
+long getDistance() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  return duration * 0.034 / 2; // cm
+}
+
+void loop() {
+  long distance = getDistance();
+
+  // LED indikator jarak
+  if(distance < 10){
+    distanceStatus="Dekat";
+    digitalWrite(LED_G,HIGH); digitalWrite(LED_Y,LOW); digitalWrite(LED_R,LOW);
+  } else if(distance <= 20){
+    distanceStatus="Sedang";
+    digitalWrite(LED_G,LOW); digitalWrite(LED_Y,HIGH); digitalWrite(LED_R,LOW);
+  } else {
+    distanceStatus="Jauh";
+    digitalWrite(LED_G,LOW); digitalWrite(LED_Y,LOW); digitalWrite(LED_R,HIGH);
+  }
+
+  // Kirim jarak ke Pi
+  Serial.print("Distance:");
+  Serial.println(distance);
+
+  // Baca perintah servo
+  while(Serial.available()){
+    char c = Serial.read();
+    if(c == '\n'){
+      inputString.trim();
+      if(inputString.startsWith("servo")){
+        int angle = inputString.substring(5).toInt();
+        if(angle >=0 && angle <=180){
+          myServo.write(angle);
+          Serial.println("Servo moved to " + String(angle));
+        } else {
+          Serial.println("Invalid angle! 0-180 only");
+        }
+      }
+      inputString = "";
+    } else {
+      inputString += c;
+    }
+  }
+
+  // Update LCD
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Dist:");
+  lcd.print(distance);
+  lcd.print("cm " + distanceStatus);
+  delay(200);
+}
