@@ -1,0 +1,12 @@
+Langkah 5.1
+sudo raspi-config
+
+Langkah 6.1
+mkdir -p /home/praktikan/kel_X/bab4
+cd /home/praktikan/kel_X/bab4
+
+Langkah 6.2
+nano bab4.py
+
+Langkah 6.5
+python3 bab4.py
